@@ -1,0 +1,28 @@
+.container {
+    width: 200px;
+    height: 50px;
+    background-color: gray;
+    border: 2px solid white;
+    border-radius: 16px;
+    cursor: pointer;
+}
+
+.container:hover {
+    background-color: darkgray;
+    transform: scale(1.05);      /* subtle grow */
+}
+
+.container:active {
+    background-color: gray;
+    transform: scale(0.95);      /* slight press down feel */
+}
+
+.selected {
+    background-color: darkgray;
+    transform: scale(1.05);      /* subtle grow */
+}
+
+.selectedInput {
+    background-color: gray;
+    transform: scale(0.95);      /* slight press down feel */
+}

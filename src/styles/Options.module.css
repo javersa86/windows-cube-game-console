@@ -1,0 +1,15 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    position: absolute;
+    top: 200px;
+    left: 100px;
+    width: 400px;
+    height: 25%;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}

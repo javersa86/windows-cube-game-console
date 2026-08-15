@@ -1,0 +1,25 @@
+.selected {
+    display: inline-block; /* transform needs this on inline elements */
+    color: #00c8d6;              /* gold highlight */
+    font-weight: 700;
+    letter-spacing: 1px;         /* slight spacing expansion */
+    text-shadow: 0 0 8px rgba(0, 200, 214, 0.8); /* glow effect */
+    font-size: 22px;
+    text-decoration: none; /* ← add this */
+    transition: all 0.2s ease; /* smooth transition */
+    cursor: pointer;
+    transform: scale(1.05);      /* subtle grow */
+}
+
+.selectedInput {
+    display: inline-block; /* transform needs this on inline elements */
+    color: #00f0ff;              /* slightly darker on click */
+    font-weight: 700;
+    letter-spacing: 1px;         /* slight spacing expansion */
+    text-shadow: 0 0 8px rgba(0, 200, 214, 0.8); /* glow effect */
+    font-size: 22px;
+    text-decoration: none; /* ← add this */
+    transition: all 0.2s ease; /* smooth transition */
+    cursor: pointer;
+    transform: scale(0.98);      /* slight press down feel */
+}

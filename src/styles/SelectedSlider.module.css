@@ -1,0 +1,31 @@
+.containerSlider {
+    -webkit-appearance: none;
+    width: 300px;
+    height: 5px;
+    outline: none;
+    opacity: 1;
+    transition: opacity 0.2s;
+    margin-left: 16px;
+}
+
+.containerSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 5px;
+    height: 40px;
+    background: #00c8d6;
+    cursor: pointer;
+    border-radius: 24%;
+    transform: scale(1.2);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.containerSlider::-moz-range-thumb {
+    width: 5px;
+    height: 40px;
+    background: #00c8d6;
+    cursor: pointer;
+    border-radius: 24%;
+    transform: scale(1.2);
+    transition: background 0.2s, transform 0.2s;
+}

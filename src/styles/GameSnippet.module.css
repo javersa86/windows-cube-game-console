@@ -1,0 +1,10 @@
+.gameSnippetContainer {
+    width: 300px;
+    height: 300px;
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    border: 2px solid white;
+    border-radius: 24px;
+    overflow: hidden;
+}
