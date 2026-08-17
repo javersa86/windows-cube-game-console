@@ -57,8 +57,8 @@ The desktop shell has moved from Electron to Tauri. Reasoning and outcome:
 ### Already working
 - **Full TypeScript conversion** — every page and component under `src/` is `.tsx`.
 - **Tauri desktop shell** — fullscreen, frameless, positioned to the primary monitor; see [Tauri Migration](#tauri-migration).
-- **Gamepad support** — `src/utils/gamepad.js` polls the browser Gamepad API and is wired into every page (D-pad navigation, A/B button handling on MainMenu, Games, Options, and Quit).
-- **Sound effects** — `src/utils/sound.js` preloads and plays UI sound effects (hover/click/rollover).
+- **Gamepad support** — `src/utils/gamepad.js` polls the browser Gamepad API and is wired into every page (D-pad navigation, A/B button handling on MainMenu, Games, Options, and Quit). Confirmed working with a physical controller under Tauri/WebView2.
+- **Sound effects** — `src/utils/sound.js` preloads and plays UI sound effects (hover/click/rollover), served as static files from `public/assets/sounds/` via Vite. (Previously broken under Tauri: `getSoundPath`/`getPicturePath` resolved a raw Windows filesystem path for `<audio>`/`<img>` `src` — worked under Electron's `webSecurity:false`, silently failed to load under WebView2, which is also why the Games page's Up/Down arrow icons rendered blank. Confirmed fixed — audio audible with a real playthrough.)
 - **Page navigation** — MainMenu, Games, Options, and Quit pages, routed with `react-router-dom` (`HashRouter`).
 - **Windows installer** — `npm run tauri build` produces both an MSI and an NSIS setup executable; see [Building the Installer](#building-the-installer).
 - **Windows-native game paths + launching** — games live under `%USERPROFILE%\PiCubeGames\{covers,games}` (created automatically on first run), resolved via the `get_games_root` Tauri command. `launch_game` spawns `python <game>.py` (no `DISPLAY` env var — there's no X11 on Windows). Verified end-to-end with a real pygame test game.
@@ -132,7 +132,7 @@ windows-cube-game-console/
 │   │   ├── main.rs             # Entry point
 │   │   ├── lib.rs              # App builder: window creation, command registration, state
 │   │   └── commands/
-│   │       ├── resources.rs    # get_resources_path, read_directory, read_game_title, app_quit
+│   │       ├── resources.rs    # get_games_root, read_directory, read_game_title, app_quit
 │   │       ├── brightness.rs   # brightness_get/set (placeholder)
 │   │       ├── volume.rs       # get_volume/set_volume/toggle_mute (placeholder)
 │   │       └── games.rs        # launch_game/kill_game + game-closed event
@@ -140,7 +140,7 @@ windows-cube-game-console/
 ├── src/
 │   ├── platform.ts             # Thin wrapper around Tauri's invoke()/listen(), replacing the old window.electron/brightness/volume/games bridge
 │   ├── utils/
-│   │   ├── assets.js           # Resource/game-cover path resolution (still Pi-path based)
+│   │   ├── assets.js           # Picture/sound paths (served from public/ via Vite) + game-cover paths (Windows-native PiCubeGames root)
 │   │   ├── gamepad.js          # Gamepad API polling + event bus
 │   │   └── sound.js            # UI sound effect preload/playback
 │   ├── components/
