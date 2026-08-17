@@ -2,14 +2,15 @@ import { useEffect } from "react";
 import CubeLayout from "../components/CubeLayout";
 import CancelButton from "../components/Buttons/CancelButton";
 import CubeLayoutStyle from "../styles/CubeLayout.module.css";
-import { on, off, BUTTONS } from '../../electron/utils/gamepad';
-import { play } from "../../electron/utils/sound.js";
+import { on, off, BUTTONS } from '../utils/gamepad';
+import { play } from "../utils/sound.js";
+import { electron } from "../platform";
 
 function Quit() {
     useEffect(() => {
         const handleA = () => {
             play("click");
-            window.electron.quit();
+            electron.quit();
         };
 
         on(BUTTONS.A, handleA);

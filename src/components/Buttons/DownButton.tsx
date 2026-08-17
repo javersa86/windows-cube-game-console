@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import DownButtonStyle from "../../styles/DownButton.module.css"
-import { preload, play } from "../../../electron/utils/sound.js";
-import { getPicturePath } from "../../../electron/utils/assets.js";
-import { on, off, BUTTONS } from '../../../electron/utils/gamepad';
+import { preload, play } from "../../utils/sound.js";
+import { getPicturePath } from "../../utils/assets.js";
+import { on, off, BUTTONS } from '../../utils/gamepad';
 
 
 function DownButton() {

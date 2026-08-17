@@ -1,6 +1,6 @@
 import style from "../../styles/CustomSlider.module.css"
 import selectedStyle from "../../styles/SelectedSlider.module.css"
-import { play } from "../../../electron/utils/sound.js";
+import { play } from "../../utils/sound.js";
 
 interface Props {
     title: string;
