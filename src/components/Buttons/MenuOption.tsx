@@ -1,6 +1,6 @@
 import style from "../../styles/MenuOption.module.css"
 import lableStyle from "../../styles/CubeLayout.module.css";
-import { preload, play } from "../../../electron/utils/sound.js";
+import { preload, play } from "../../utils/sound.js";
 import { Link } from 'react-router-dom';
 
 preload("click");

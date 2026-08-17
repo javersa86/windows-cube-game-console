@@ -1,10 +1,10 @@
 import CubeLayout from "../components/CubeLayout";
 import MenuOption from "../components/Buttons/MenuOption";
 import CubeLayoutStyle from "../styles/CubeLayout.module.css";
-import { on, off, BUTTONS } from '../../electron/utils/gamepad';
+import { on, off, BUTTONS } from '../utils/gamepad';
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { preload, play } from "../../electron/utils/sound.js";
+import { preload, play } from "../utils/sound.js";
 
 const MENU_ITEMS = [
     { text: "Games", dst: "/games" },

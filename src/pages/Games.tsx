@@ -4,8 +4,9 @@ import CubeLayout from "../components/CubeLayout";
 import GameSelectionsView from "../components/GamesPageComponents/GameSelectionsView";
 import GameSnippet from "../components/GamesPageComponents/GameSnippet";
 import CubeLayoutStyle from "../styles/CubeLayout.module.css";
-import { getGamePreview, getGameTitleFile, availableGameCovers } from "../../electron/utils/assets.js";
-import { on, off, BUTTONS } from '../../electron/utils/gamepad';
+import { getGamePreview, getGameTitleFile, availableGameCovers } from "../utils/assets.js";
+import { on, off, BUTTONS } from '../utils/gamepad';
+import { electron, games } from "../platform";
 
 function Games() {
     const [gameSrc, setGameSrc] = useState("");
@@ -29,7 +30,7 @@ function Games() {
         getGamePreview(files[0]).then(setGameSrc);
 
         getGameTitleFile(files[0]).then((titleFile: string) => {
-            window.electron.readGameTitle(titleFile).then((data: string | null) => {
+            electron.readGameTitle(titleFile).then((data: string | null) => {
                 setGameTitle(data || "Unknown Game");
             });
         });
@@ -43,7 +44,7 @@ function Games() {
 
         const handleAButton = () => {
             if (!gameIdRef.current) return;
-            window.games.launch(gameIdRef.current);
+            games.launch(gameIdRef.current);
         };
 
         on(BUTTONS.A, handleAButton);
