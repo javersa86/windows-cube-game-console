@@ -3,8 +3,10 @@ import CustomSlider from "../components/OptionsPageComponents/CustomSlider";
 import CancelButton from "../components/Buttons/CancelButton";
 import OptionsStyle from "../styles/Options.module.css";
 import CubeLayoutStyle from "../styles/CubeLayout.module.css";
-import { preload, play } from "../../electron/utils/sound.js";
-import { on, off, BUTTONS } from '../../electron/utils/gamepad';
+import { preload, play } from "../utils/sound.js";
+import { on, off, BUTTONS } from '../utils/gamepad';
+// aliased: this file already has local `brightness`/`volume` state variables
+import { brightness as brightnessApi, volume as volumeApi } from "../platform";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { debounce } from "lodash";
@@ -24,11 +26,11 @@ function Options() {
         // Preload sounds
         preload("rollover");
 
-        window.brightness.get().then(v => {
+        brightnessApi.get().then(v => {
             setBrightnessState(v);
             brightnessRef.current = v;
         });
-        window.volume.get().then(v => {
+        volumeApi.get().then(v => {
             setVolumeState(v);
             volumeRef.current = v;
         });
@@ -37,12 +39,12 @@ function Options() {
 
     // Debounced brightness setter
     const debouncedSetBrightness = useMemo(() =>
-        debounce((value: number) => window.brightness.set(value), 100)
+        debounce((value: number) => brightnessApi.set(value), 100)
     , []);
 
     // Debounced volume setter
     const debouncedSetVolume = useMemo(() =>
-        debounce((value: number) => window.volume.set(value), 100)
+        debounce((value: number) => volumeApi.set(value), 100)
     , []);
     
     // Cleanup debounces on unmount

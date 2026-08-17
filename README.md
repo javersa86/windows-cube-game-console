@@ -1,20 +1,21 @@
 # Windows Cube Game Console
-A custom game console menu built with React, TypeScript, and Vite — a Windows port of [pi-cube-game-console](https://github.com/Brickhouse4U/pi-cube-game-console), targeting desktop Windows instead of a Raspberry Pi / embedded Linux. **The desktop shell is migrating from Electron to [Tauri](https://tauri.app/)** — see [Migrating to Tauri](#migrating-to-tauri) below.
+A custom game console menu built with React, TypeScript, and Vite — a Windows port of [pi-cube-game-console](https://github.com/Brickhouse4U/pi-cube-game-console), targeting desktop Windows instead of a Raspberry Pi / embedded Linux. **The desktop shell has migrated from Electron to [Tauri](https://tauri.app/)** — see [Tauri Migration](#tauri-migration) below.
 
-> ⚠️ This project is currently in active development. The code today is still Electron-based (unchanged from the original Pi port); the Tauri migration is a decided direction, not yet implemented.
+> ⚠️ This project is currently in active development. Several features are still placeholders — see [Current State](#current-state).
 
 ---
 
 ## Table of Contents
 1. [Overview](#overview)
 2. [Relationship to pi-cube-game-console](#relationship-to-pi-cube-game-console)
-3. [Migrating to Tauri](#migrating-to-tauri)
+3. [Tauri Migration](#tauri-migration)
 4. [Current State](#current-state)
 5. [Planned / Windows Adaptation Work](#planned--windows-adaptation-work)
 6. [Tech Stack](#tech-stack)
 7. [Project Structure](#project-structure)
 8. [Getting Started](#getting-started)
-9. [Roadmap](#roadmap)
+9. [Building the Installer](#building-the-installer)
+10. [Roadmap](#roadmap)
 
 ---
 
@@ -26,8 +27,8 @@ Windows Cube Game Console is a fullscreen desktop application that serves as a g
 |---|---|
 | Target Platform | Windows 10/11 (x64) |
 | UI Framework | React 19 + TypeScript + Vite 8 |
-| Desktop Shell | Electron 43 today → migrating to Tauri |
-| Display | Windowed/fullscreen native window (no X.Org/systemd dependency) |
+| Desktop Shell | Tauri 2 (Rust + WebView2) |
+| Display | Fullscreen, frameless, sized to the primary monitor |
 
 ---
 
@@ -37,58 +38,63 @@ This is a separate git project, not a fork — the UI (pages, components, styles
 
 ---
 
-## Migrating to Tauri
+## Tauri Migration
 
-The desktop shell is moving from Electron to Tauri. Reasoning:
+The desktop shell has moved from Electron to Tauri. Reasoning and outcome:
 
 - **What Electron was doing here**: bundling Chromium + Node.js so the React UI could run outside a browser, with a Node "main process" providing the OS access a sandboxed web page can't have (spawning game processes, reading external drives, controlling system volume/brightness) — bridged to the UI via a preload script and `contextBridge`.
-- **Why move off it**: that main-process/preload bridge is real complexity, and on this Windows port it surfaced a reproducible bug — `vite-plugin-electron`'s dev-mode auto-restart (triggered on every `main.js` edit) has a Windows-specific race that corrupts the sandboxed preload's startup data, breaking `window.electron`/`window.volume`/etc. on an unpredictable subset of restarts. That's tooling flakiness, not a fundamental flaw in the app design, but it made Windows-side iteration unreliable.
-- **Why Tauri instead of dropping the native shell entirely**: the app genuinely needs OS-level access (game-process launching, real system volume/brightness, external-drive file access), which a plain browser page can't provide. Tauri keeps the same "web frontend + native backend" shape as Electron, but uses the OS's built-in WebView2 runtime instead of bundling Chromium, and its Rust-based command/IPC model doesn't share Electron's sandboxed-preload machinery — meaning the specific class of bug above doesn't apply. The tradeoff: backend code (today's `electron/utils/*.js`) gets rewritten in Rust as Tauri commands, not Node/JavaScript.
+- **Why move off it**: that main-process/preload bridge was real complexity, and on this Windows port it surfaced a reproducible bug — `vite-plugin-electron`'s dev-mode auto-restart (triggered on every `main.js` edit) had a Windows-specific race that corrupted the sandboxed preload's startup data, breaking `window.electron`/`window.volume`/etc. on an unpredictable subset of restarts. That was tooling flakiness, not a fundamental flaw in the app design, but it made Windows-side iteration unreliable.
+- **Why Tauri instead of dropping the native shell entirely**: the app genuinely needs OS-level access (game-process launching, real system volume/brightness, external-drive file access), which a plain browser page can't provide. Tauri keeps the same "web frontend + native backend" shape as Electron, but uses Windows' built-in WebView2 runtime instead of bundling Chromium, and its Rust-based command/IPC model doesn't share Electron's sandboxed-preload machinery — so the specific class of bug above doesn't apply. The tradeoff: backend code (`electron/utils/*.js`) was rewritten in Rust as Tauri commands (`src-tauri/src/commands/`).
 
-**Status**: not yet started. `package.json`, `vite.config.ts`, and the `electron/` directory are all still the original Electron setup. Migration will involve scaffolding a `src-tauri/` Rust backend, removing `electron`/`vite-plugin-electron`/`vite-plugin-electron-renderer`, and porting each `electron/utils/*.js` module to a Tauri command. This README will be updated with real package versions and project structure once that scaffolding exists — nothing below is invented ahead of the actual migration.
+**Status: complete.** The migration was done in stages, keeping Electron working until each piece was verified: a toolchain/IPC spike, porting every IPC handler to a Rust command one at a time, a thin frontend adapter (`src/platform.ts`) replacing `window.electron`/`brightness`/`volume`/`games`, window parity (fullscreen/frameless/primary-monitor positioning, ported from `electron/main.js`'s `createWindow()`), a real Windows installer (new capability — the project had none before), a validation pass, and finally removing `electron/`, `vite-plugin-electron`, and `vite-plugin-electron-renderer` entirely. The dev-mode edit/reload cycle that motivated this migration was re-verified clean across the whole process — no recurrence of the preload-corruption bug.
+
+`electron/utils/gamepad.js` and `sound.js` needed no backend changes (pure browser APIs) and now live at `src/utils/` alongside `assets.js`, since they were always renderer-side code, not Electron-main code.
 
 ---
 
 ## Current State
 
-*(Reflects the code as it exists today — still Electron, pre-migration.)*
-
 ### Already working
-- **Full TypeScript conversion** — every page and component under `src/` is already `.tsx` (`App.tsx`, `MainMenu.tsx`, `Games.tsx`, `Options.tsx`, `Quit.tsx`, and all of `src/components/`). The `.jsx` → `.tsx` rewrite described in the Pi version's roadmap is done here.
-- **Gamepad support** — `electron/utils/gamepad.js` polls the browser Gamepad API and is already wired into every page (D-pad navigation, A/B button handling on MainMenu, Games, Options, and Quit). This logic is UI-side (browser Gamepad API) and should port to Tauri largely unchanged.
-- **Sound effects** — `electron/utils/sound.js` preloads and plays UI sound effects (hover/click/rollover), already in use across pages.
+- **Full TypeScript conversion** — every page and component under `src/` is `.tsx`.
+- **Tauri desktop shell** — fullscreen, frameless, positioned to the primary monitor; see [Tauri Migration](#tauri-migration).
+- **Gamepad support** — `src/utils/gamepad.js` polls the browser Gamepad API and is wired into every page (D-pad navigation, A/B button handling on MainMenu, Games, Options, and Quit).
+- **Sound effects** — `src/utils/sound.js` preloads and plays UI sound effects (hover/click/rollover).
 - **Page navigation** — MainMenu, Games, Options, and Quit pages, routed with `react-router-dom` (`HashRouter`).
+- **Windows installer** — `npm run tauri build` produces both an MSI and an NSIS setup executable; see [Building the Installer](#building-the-installer).
+- **Windows-native game paths + launching** — games live under `%USERPROFILE%\PiCubeGames\{covers,games}` (created automatically on first run), resolved via the `get_games_root` Tauri command. `launch_game` spawns `python <game>.py` (no `DISPLAY` env var — there's no X11 on Windows). Verified end-to-end with a real pygame test game.
 
 ### Placeholder / not yet real
-- **Brightness** (`electron/utils/brightness.js`) — in-memory placeholder only; the Pi version's DDC/CI (`ddcutil`) approach doesn't apply on Windows and hasn't been replaced yet.
-- **Volume** (`electron/utils/volume.js`) — in-memory placeholder only; the Pi version's ALSA (`amixer`) approach doesn't apply on Windows and hasn't been replaced yet.
+- **Brightness** (`src-tauri/src/commands/brightness.rs`) — in-memory placeholder only; the Pi version's DDC/CI (`ddcutil`) approach doesn't apply on Windows and hasn't been replaced yet.
+- **Volume** (`src-tauri/src/commands/volume.rs`) — in-memory placeholder only; the Pi version's ALSA (`amixer`) approach doesn't apply on Windows and hasn't been replaced yet.
 
 ### Carried over from the Pi version but not yet adapted
-- **Game paths** — `electron/utils/assets.js` and the Games page still hardcode Pi-specific mount paths (`/media/picube/covers/...`), which won't resolve on Windows.
-- **Game launching** — `electron/main.js`'s `launch-game` handler still spawns `python3 <path>` with a Linux `DISPLAY=:0` environment variable; this needs a Windows-appropriate process launch.
 - **Branding** — the MainMenu page header still literally reads "Pi Cube" (`src/pages/MainMenu.tsx`), left over from the source project and not yet renamed.
+
+### Games directory layout
+```
+%USERPROFILE%\PiCubeGames\
+├── covers\
+│   └── <game-id>\
+│       ├── title.txt       # display name shown on the Games page
+│       └── preview.mp4     # optional preview clip
+└── games\
+    └── <game-id>\
+        └── <game-id>.py    # entry point, launched via `python <game-id>.py`
+```
+Requires Python 3 with `pygame` installed and on `PATH` (`pip install pygame`) — games are plain pygame scripts, same format as the Pi version, so the same game code can in principle run on both platforms.
 
 ---
 
 ## Planned / Windows Adaptation Work
 
-These are the same underlying gaps as before, now targeted at landing on Tauri rather than patched into the Electron main process:
-
-1. Scaffold the Tauri project (`src-tauri/`) and wire the existing Vite/React frontend into it.
-2. Port `electron/utils/*.js` to Tauri commands (Rust), one module at a time, rather than porting them to more Electron/Node code first.
+1. Implement a real Windows brightness backend (no direct OS equivalent to DDC/CI — needs research).
+2. Implement a real Windows volume backend (feasible via the Windows Core Audio API, e.g. `IAudioEndpointVolume`, reachable from Rust via the `windows` crate).
 3. Rename in-app branding ("Pi Cube" → project's actual name) once decided.
-4. Replace `/media/picube/...` path assumptions with a Windows-appropriate games directory (configurable path or a bundled folder), and adjust `Games.tsx` accordingly.
-5. Replace the `python3` + X11 `DISPLAY` game-launch logic with a Windows-native process launch (Rust `std::process::Command` in a Tauri command).
-6. Implement a real Windows brightness backend (no direct OS equivalent to DDC/CI without additional tooling — needs research either way, Electron or Tauri).
-7. Implement a real Windows volume backend (feasible via the Windows Core Audio API, e.g. `IAudioEndpointVolume`, reachable from Rust via the `windows` crate).
-8. Add Windows packaging — Tauri's own bundler (MSI/NSIS) replaces the Pi version's `electron-builder`/AppImage setup.
-9. Re-integrate any remaining Pi-version features not yet ported (external device manager, dedicated game launcher window) — see the Pi version's own roadmap for what's implemented there.
+4. Re-integrate any remaining Pi-version features not yet ported (external device manager, dedicated game launcher window) — see the Pi version's own roadmap for what's implemented there.
 
 ---
 
 ## Tech Stack
-
-*(Current, as of today — still the Electron setup. Will be updated once the Tauri scaffold replaces it; see [Migrating to Tauri](#migrating-to-tauri).)*
 
 ### Frontend
 | Package | Version | Purpose |
@@ -97,6 +103,7 @@ These are the same underlying gaps as before, now targeted at landing on Tauri r
 | `react-dom` | ^19.2.8 | React DOM rendering |
 | `react-router-dom` | ^7.18.2 | Page routing / navigation |
 | `lodash` | ^4.18.1 | Debouncing (e.g. Options sliders) |
+| `@tauri-apps/api` | ^2.11.1 | JS bindings for invoking Rust commands / listening for events |
 
 ### Build Tools
 | Package | Version | Purpose |
@@ -104,33 +111,38 @@ These are the same underlying gaps as before, now targeted at landing on Tauri r
 | `typescript` | ~6.0.2 | Type checking / compilation |
 | `vite` | ^8.2.0 | Frontend bundler / dev server |
 | `@vitejs/plugin-react` | ^6.0.4 | React support for Vite |
-| `vite-plugin-electron` | ^1.1.1 | Runs/builds the Electron main + preload alongside Vite — to be removed during migration |
-| `vite-plugin-electron-renderer` | ^1.0.0 | Node/Electron API support in the renderer — to be removed during migration |
 | `oxlint` | ^1.75.0 | Linting |
+| `@tauri-apps/cli` | ^2.11.4 | Tauri dev/build CLI |
 
-### Desktop (current — Electron)
-| Package | Version | Purpose |
-|---|---|---|
-| `electron` | ^43.4.0 | Desktop app wrapper — being replaced by Tauri |
+### Desktop (Rust — `src-tauri/`)
+| Crate | Purpose |
+|---|---|
+| `tauri` | Desktop app shell — window management, IPC, bundler |
+| `tauri-plugin-log` | Debug-build logging |
+| `serde` / `serde_json` | IPC payload (de)serialization |
 
 ---
 
 ## Project Structure
 
-*(Current, as of today.)*
-
 ```
 windows-cube-game-console/
-├── electron/
-│   ├── main.js               # Electron main process — window creation, IPC handlers
-│   ├── preload.js             # contextBridge — exposes window.electron/brightness/volume/games
-│   └── utils/
-│       ├── assets.js          # Resource/game-cover path resolution (still Pi-path based)
-│       ├── brightness.js      # Placeholder brightness backend
-│       ├── gamepad.js         # Gamepad API polling + event bus
-│       ├── sound.js           # UI sound effect preload/playback
-│       └── volume.js          # Placeholder volume backend
+├── src-tauri/
+│   ├── src/
+│   │   ├── main.rs             # Entry point
+│   │   ├── lib.rs              # App builder: window creation, command registration, state
+│   │   └── commands/
+│   │       ├── resources.rs    # get_resources_path, read_directory, read_game_title, app_quit
+│   │       ├── brightness.rs   # brightness_get/set (placeholder)
+│   │       ├── volume.rs       # get_volume/set_volume/toggle_mute (placeholder)
+│   │       └── games.rs        # launch_game/kill_game + game-closed event
+│   └── tauri.conf.json         # App identity, dev/build commands, bundler (MSI/NSIS) config
 ├── src/
+│   ├── platform.ts             # Thin wrapper around Tauri's invoke()/listen(), replacing the old window.electron/brightness/volume/games bridge
+│   ├── utils/
+│   │   ├── assets.js           # Resource/game-cover path resolution (still Pi-path based)
+│   │   ├── gamepad.js          # Gamepad API polling + event bus
+│   │   └── sound.js            # UI sound effect preload/playback
 │   ├── components/
 │   │   ├── Buttons/            # CancelButton, DownButton, MenuOption, UpButton
 │   │   ├── GamesPageComponents/ # GameSelectionsView, GameSnippet
@@ -143,25 +155,21 @@ windows-cube-game-console/
 │   │   └── Quit.tsx            # Quit confirmation page
 │   ├── styles/                 # CSS module styles
 │   ├── App.tsx                 # Root component + router setup
-│   ├── main.tsx                 # React entry point
-│   └── global.d.ts             # Ambient types for window.electron/brightness/volume/games
-├── index.html                  # Electron renderer entry point
-├── vite.config.ts              # Vite + vite-plugin-electron configuration
+│   └── main.tsx                # React entry point
+├── index.html
+├── vite.config.ts
 ├── tsconfig.json / tsconfig.app.json / tsconfig.node.json
 └── package.json
 ```
-
-Once the Tauri migration lands, `electron/` will be replaced by a `src-tauri/` Rust crate, and this tree will be updated to match — not before.
 
 ---
 
 ## Getting Started
 
-*(Current — Electron-based dev workflow. Will change once Tauri is scaffolded.)*
-
 ### Prerequisites
-- Node.js 18+
-- npm
+- Node.js 18+ and npm
+- Rust (stable, **MSVC** toolchain — `rustup default stable-x86_64-pc-windows-msvc`) with the Visual Studio C++ Build Tools workload
+- WebView2 Runtime (preinstalled on Windows 10/11)
 
 ### Install dependencies
 ```bash
@@ -170,17 +178,17 @@ npm install
 
 ### Run in development mode
 ```bash
-npm run dev
+npm run tauri dev
 ```
-`vite-plugin-electron` launches Electron automatically alongside the Vite dev server — there's no separate `concurrently`-based start script like the Pi version has.
+Starts the Vite dev server and a Tauri/WebView2 window together, with hot reload on the frontend and automatic rebuild-and-restart on Rust changes.
 
-> Known issue: editing `electron/main.js` while `npm run dev` is running triggers a full process restart that can intermittently fail to reload the preload script correctly on Windows (see [Migrating to Tauri](#migrating-to-tauri)). If the app shows `window.electron` as `undefined`, fully stop and restart `npm run dev` rather than relying on the auto-restart.
+`npm run dev` alone still works as a plain Vite dev server (frontend-only, no native window) if that's all you need.
 
-### Build the renderer + main/preload
+### Build the frontend only
 ```bash
 npm run build
 ```
-Runs `tsc -b` followed by `vite build`. This does not produce an installable Windows package — see [Planned / Windows Adaptation Work](#planned--windows-adaptation-work) for packaging.
+Runs `tsc -b` followed by `vite build`. This does not produce an installable Windows package — see [Building the Installer](#building-the-installer).
 
 ### Lint
 ```bash
@@ -189,17 +197,30 @@ npm run lint
 
 ---
 
+## Building the Installer
+
+```bash
+npm run tauri build
+```
+Produces both a Windows installer under `src-tauri/target/release/bundle/`:
+- `msi/Windows Cube Game Console_<version>_x64_en-US.msi`
+- `nsis/Windows Cube Game Console_<version>_x64-setup.exe`
+
+First run downloads WiX (for MSI) and NSIS (for the setup exe) automatically. Icons are still the generic Tauri scaffold defaults — swap `src-tauri/icons/` for real branding when available.
+
+---
+
 ## Roadmap
 
 ```
 ✅ Phase 0 — Project bootstrap from pi-cube-game-console, TypeScript conversion
 ✅ Phase 1 — Page navigation (MainMenu, Games, Options, Quit) + gamepad support
-⬜ Phase 2 — Migrate desktop shell from Electron to Tauri
-⬜ Phase 3 — Windows-native game paths + game launching (replace /media/picube + python3/DISPLAY)
+✅ Phase 2 — Migrate desktop shell from Electron to Tauri
+✅ Phase 3 — Windows-native game paths + game launching (replace /media/picube + python3/DISPLAY)
 ⬜ Phase 4 — Real Windows brightness backend (Tauri command)
 ⬜ Phase 5 — Real Windows volume backend (Tauri command, Core Audio API via the `windows` crate)
 ⬜ Phase 6 — Rebranding (drop "Pi Cube" leftovers)
-⬜ Phase 7 — Windows packaging (Tauri bundler — MSI/NSIS)
+✅ Phase 7 — Windows packaging (Tauri bundler — MSI/NSIS)
 ⬜ Phase 8 — Re-integrate remaining Pi-version features (external device manager, game launcher window)
 ```
 

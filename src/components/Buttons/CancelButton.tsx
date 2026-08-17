@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import CancelButtonStyle from "../../styles/CancelButton.module.css"
-import { preload, play } from "../../../electron/utils/sound.js";
-import { on, off, BUTTONS } from '../../../electron/utils/gamepad';
+import { preload, play } from "../../utils/sound.js";
+import { on, off, BUTTONS } from '../../utils/gamepad';
 import { useEffect, useState } from 'react';
 
 preload("click");

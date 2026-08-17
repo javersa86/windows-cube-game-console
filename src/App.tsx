@@ -3,7 +3,7 @@ import MainMenu from './pages/MainMenu'
 import Games from './pages/Games';
 import Options from './pages/Options';
 import Quit from './pages/Quit';
-import { start } from '../electron/utils/gamepad';
+import { start } from './utils/gamepad';
 
 
 function App() {
