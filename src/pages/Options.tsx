@@ -3,7 +3,7 @@ import CustomSlider from "../components/OptionsPageComponents/CustomSlider";
 import CancelButton from "../components/Buttons/CancelButton";
 import OptionsStyle from "../styles/Options.module.css";
 import CubeLayoutStyle from "../styles/CubeLayout.module.css";
-import { preload, play } from "../utils/sound.js";
+import { preload, play, setVolume as setSoundVolume } from "../utils/sound.js";
 import { on, off, BUTTONS } from '../utils/gamepad';
 // aliased: this file already has local `brightness`/`volume` state variables
 import { brightness as brightnessApi, volume as volumeApi } from "../platform";
@@ -33,6 +33,7 @@ function Options() {
         volumeApi.get().then(v => {
             setVolumeState(v);
             volumeRef.current = v;
+            setSoundVolume(v);
         });
     }, []);
 
@@ -66,6 +67,7 @@ function Options() {
         const value = parseFloat(e.target.value);
         setVolumeState(value);
         volumeRef.current = value;
+        setSoundVolume(value);
         debouncedSetVolume(value);
     };
 
@@ -96,6 +98,7 @@ function Options() {
                 const next = Math.max(0.0, parseFloat((volumeRef.current - 0.1).toFixed(1)));
                 volumeRef.current = next;
                 setVolumeState(next);
+                setSoundVolume(next);
                 debouncedSetVolume(next);
             }
             play("rollover");
@@ -112,6 +115,7 @@ function Options() {
                 const next = Math.min(1.0, parseFloat((volumeRef.current + 0.1).toFixed(1)));
                 volumeRef.current = next;
                 setVolumeState(next);
+                setSoundVolume(next);
                 debouncedSetVolume(next);
             }
             play("rollover");

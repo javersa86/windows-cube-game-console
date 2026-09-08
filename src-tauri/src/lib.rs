@@ -4,7 +4,7 @@ use commands::brightness::BrightnessState;
 use commands::games::GameState;
 use commands::volume::VolumeState;
 use tauri::window::Color;
-use tauri::{WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,6 +33,8 @@ pub fn run() {
             .build(),
         )?;
       }
+
+      commands::volume::load_persisted_volume(&app.handle(), app.state::<VolumeState>().inner());
 
       // Mirrors electron/main.js's createWindow(): fullscreen, frameless, black
       // background, sized/positioned to fully cover a display. The original read
