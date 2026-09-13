@@ -1,6 +1,5 @@
 mod commands;
 
-use commands::brightness::BrightnessState;
 use commands::games::GameState;
 use commands::volume::VolumeState;
 use tauri::window::Color;
@@ -9,7 +8,6 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .manage(BrightnessState::default())
     .manage(VolumeState::default())
     .manage(GameState::default())
     .invoke_handler(tauri::generate_handler![
@@ -17,8 +15,6 @@ pub fn run() {
       commands::resources::read_directory,
       commands::resources::read_game_title,
       commands::resources::app_quit,
-      commands::brightness::brightness_get,
-      commands::brightness::brightness_set,
       commands::volume::get_volume,
       commands::volume::set_volume,
       commands::volume::toggle_mute,

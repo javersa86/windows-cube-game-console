@@ -44,7 +44,7 @@ The desktop shell has moved from Electron to Tauri. Reasoning and outcome:
 
 - **What Electron was doing here**: bundling Chromium + Node.js so the React UI could run outside a browser, with a Node "main process" providing the OS access a sandboxed web page can't have (spawning game processes, reading external drives, controlling system volume/brightness) — bridged to the UI via a preload script and `contextBridge`.
 - **Why move off it**: that main-process/preload bridge was real complexity, and on this Windows port it surfaced a reproducible bug — `vite-plugin-electron`'s dev-mode auto-restart (triggered on every `main.js` edit) had a Windows-specific race that corrupted the sandboxed preload's startup data, breaking `window.electron`/`window.volume`/etc. on an unpredictable subset of restarts. That was tooling flakiness, not a fundamental flaw in the app design, but it made Windows-side iteration unreliable.
-- **Why Tauri instead of dropping the native shell entirely**: the app genuinely needs OS-level access (game-process launching, real system volume/brightness, external-drive file access), which a plain browser page can't provide. Tauri keeps the same "web frontend + native backend" shape as Electron, but uses Windows' built-in WebView2 runtime instead of bundling Chromium, and its Rust-based command/IPC model doesn't share Electron's sandboxed-preload machinery — so the specific class of bug above doesn't apply. The tradeoff: backend code (`electron/utils/*.js`) was rewritten in Rust as Tauri commands (`src-tauri/src/commands/`).
+- **Why Tauri instead of dropping the native shell entirely**: the app genuinely needs OS-level access (game-process launching, real system volume, external-drive file access), which a plain browser page can't provide. Tauri keeps the same "web frontend + native backend" shape as Electron, but uses Windows' built-in WebView2 runtime instead of bundling Chromium, and its Rust-based command/IPC model doesn't share Electron's sandboxed-preload machinery — so the specific class of bug above doesn't apply. The tradeoff: backend code (`electron/utils/*.js`) was rewritten in Rust as Tauri commands (`src-tauri/src/commands/`).
 
 **Status: complete.** The migration was done in stages, keeping Electron working until each piece was verified: a toolchain/IPC spike, porting every IPC handler to a Rust command one at a time, a thin frontend adapter (`src/platform.ts`) replacing `window.electron`/`brightness`/`volume`/`games`, window parity (fullscreen/frameless/primary-monitor positioning, ported from `electron/main.js`'s `createWindow()`), a real Windows installer (new capability — the project had none before), a validation pass, and finally removing `electron/`, `vite-plugin-electron`, and `vite-plugin-electron-renderer` entirely. The dev-mode edit/reload cycle that motivated this migration was re-verified clean across the whole process — no recurrence of the preload-corruption bug.
 
@@ -64,7 +64,6 @@ The desktop shell has moved from Electron to Tauri. Reasoning and outcome:
 - **Windows-native game paths + launching** — games live under `%USERPROFILE%\PiCubeGames\{covers,games}` (created automatically on first run), resolved via the `get_games_root` Tauri command. `launch_game` spawns `python <game>.py` (no `DISPLAY` env var — there's no X11 on Windows). Verified end-to-end with a real pygame test game.
 
 ### Placeholder / not yet real
-- **Brightness** (`src-tauri/src/commands/brightness.rs`) — in-memory placeholder only; the Pi version's DDC/CI (`ddcutil`) approach doesn't apply on Windows and hasn't been replaced yet.
 - **Volume** (`src-tauri/src/commands/volume.rs`) — in-memory placeholder only; the Pi version's ALSA (`amixer`) approach doesn't apply on Windows and hasn't been replaced yet.
 
 ### Carried over from the Pi version but not yet adapted
@@ -87,10 +86,11 @@ Requires Python 3 with `pygame` installed and on `PATH` (`pip install pygame`) �
 
 ## Planned / Windows Adaptation Work
 
-1. Implement a real Windows brightness backend (no direct OS equivalent to DDC/CI — needs research).
-2. Implement a real Windows volume backend (feasible via the Windows Core Audio API, e.g. `IAudioEndpointVolume`, reachable from Rust via the `windows` crate).
-3. Rename in-app branding ("Pi Cube" → project's actual name) once decided.
-4. Re-integrate any remaining Pi-version features not yet ported (external device manager, dedicated game launcher window) — see the Pi version's own roadmap for what's implemented there.
+1. Implement a real Windows volume backend (feasible via the Windows Core Audio API, e.g. `IAudioEndpointVolume`, reachable from Rust via the `windows` crate).
+2. Rename in-app branding ("Pi Cube" → project's actual name) once decided.
+3. Re-integrate any remaining Pi-version features not yet ported (external device manager, dedicated game launcher window) — see the Pi version's own roadmap for what's implemented there.
+
+Note: brightness control was dropped from scope — not a feature this project needs.
 
 ---
 
@@ -133,7 +133,6 @@ windows-cube-game-console/
 │   │   ├── lib.rs              # App builder: window creation, command registration, state
 │   │   └── commands/
 │   │       ├── resources.rs    # get_games_root, read_directory, read_game_title, app_quit
-│   │       ├── brightness.rs   # brightness_get/set (placeholder)
 │   │       ├── volume.rs       # get_volume/set_volume/toggle_mute (placeholder)
 │   │       └── games.rs        # launch_game/kill_game + game-closed event
 │   └── tauri.conf.json         # App identity, dev/build commands, bundler (MSI/NSIS) config
@@ -151,7 +150,7 @@ windows-cube-game-console/
 │   ├── pages/
 │   │   ├── MainMenu.tsx        # Main menu / landing page
 │   │   ├── Games.tsx           # Games browser page
-│   │   ├── Options.tsx         # Brightness/volume settings page
+│   │   ├── Options.tsx         # Volume settings page
 │   │   └── Quit.tsx            # Quit confirmation page
 │   ├── styles/                 # CSS module styles
 │   ├── App.tsx                 # Root component + router setup
@@ -217,11 +216,12 @@ First run downloads WiX (for MSI) and NSIS (for the setup exe) automatically. Ic
 ✅ Phase 1 — Page navigation (MainMenu, Games, Options, Quit) + gamepad support
 ✅ Phase 2 — Migrate desktop shell from Electron to Tauri
 ✅ Phase 3 — Windows-native game paths + game launching (replace /media/picube + python3/DISPLAY)
-⬜ Phase 4 — Real Windows brightness backend (Tauri command)
-⬜ Phase 5 — Real Windows volume backend (Tauri command, Core Audio API via the `windows` crate)
-⬜ Phase 6 — Rebranding (drop "Pi Cube" leftovers)
-✅ Phase 7 — Windows packaging (Tauri bundler — MSI/NSIS)
-⬜ Phase 8 — Re-integrate remaining Pi-version features (external device manager, game launcher window)
+⬜ Phase 4 — Real Windows volume backend (Tauri command, Core Audio API via the `windows` crate)
+⬜ Phase 5 — Rebranding (drop "Pi Cube" leftovers)
+✅ Phase 6 — Windows packaging (Tauri bundler — MSI/NSIS)
+⬜ Phase 7 — Re-integrate remaining Pi-version features (external device manager, game launcher window)
+
+(Brightness control — previously Phase 4 — was dropped from scope.)
 ```
 
 ---
