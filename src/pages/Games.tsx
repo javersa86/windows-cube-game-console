@@ -19,10 +19,10 @@ function Games() {
 
         if (files.length === 0) {
             if (retries > 0) {
-                setGameTitle("Looking for games...");
+                setGameTitle("Looking for apps...");
                 setTimeout(() => loadGames(retries - 1, delay), delay);
             } else {
-                setGameTitle("No Games Found");
+                setGameTitle("No Apps Found");
             }
             return;
         }
@@ -31,7 +31,7 @@ function Games() {
 
         getGameTitleFile(files[0]).then((titleFile: string) => {
             electron.readGameTitle(titleFile).then((data: string | null) => {
-                setGameTitle(data || "Unknown Game");
+                setGameTitle(data || "Unknown App");
             });
         });
 
@@ -63,8 +63,8 @@ function Games() {
             <CancelButton dst="/" />
 
             <div className={CubeLayoutStyle.bottomLeft}>
-                <p>Press Up/Down to Switch Games</p>
-                <p>Press A to Select Game</p>
+                <p>Press Up/Down to Switch Apps</p>
+                <p>Press A to Select App</p>
                 <p>Press B to Return to Main Menu</p>
             </div>
         </CubeLayout>

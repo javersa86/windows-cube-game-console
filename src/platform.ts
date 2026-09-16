@@ -1,7 +1,7 @@
 // Thin wrapper around the Tauri commands ported in src-tauri/src/commands/,
 // replacing the old electron/preload.js contextBridge (window.electron/
-// brightness/volume/games). Keeps the same namespaced call shape so page
-// components barely change.
+// volume/games). Keeps the same namespaced call shape so page components
+// barely change.
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
@@ -11,11 +11,6 @@ export const electron = {
     readDirectory: (dirPath: string): Promise<string[]> => invoke('read_directory', { dirPath }),
     readGameTitle: (filePath: string): Promise<string | null> => invoke('read_game_title', { filePath }),
     quit: (): Promise<void> => invoke('app_quit'),
-};
-
-export const brightness = {
-    get: (): Promise<number> => invoke('brightness_get'),
-    set: (value: number): Promise<number> => invoke('brightness_set', { value }),
 };
 
 export const volume = {
