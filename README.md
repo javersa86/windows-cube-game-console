@@ -1,4 +1,4 @@
-# Windows Cube Game Console
+# Windows Cube Launcher
 A custom game console menu built with React, TypeScript, and Vite — a Windows port of [pi-cube-game-console](https://github.com/Brickhouse4U/pi-cube-game-console), targeting desktop Windows instead of a Raspberry Pi / embedded Linux. **The desktop shell has migrated from Electron to [Tauri](https://tauri.app/)** — see [Tauri Migration](#tauri-migration) below.
 
 > ⚠️ This project is currently in active development. Several features are still placeholders — see [Current State](#current-state).
@@ -21,7 +21,7 @@ A custom game console menu built with React, TypeScript, and Vite — a Windows 
 
 ## Overview
 
-Windows Cube Game Console is a fullscreen desktop application that serves as a game console-style menu UI, running as a normal desktop app on Windows rather than booting as the embedded OS on a Raspberry Pi.
+Windows Cube Launcher is a fullscreen desktop application that serves as a game console-style menu UI, running as a normal desktop app on Windows rather than booting as the embedded OS on a Raspberry Pi.
 
 | Property | Value |
 |---|---|
@@ -57,9 +57,9 @@ The desktop shell has moved from Electron to Tauri. Reasoning and outcome:
 ### Already working
 - **Full TypeScript conversion** — every page and component under `src/` is `.tsx`.
 - **Tauri desktop shell** — fullscreen, frameless, positioned to the primary monitor; see [Tauri Migration](#tauri-migration).
-- **Gamepad support** — `src/utils/gamepad.js` polls the browser Gamepad API and is wired into every page (D-pad navigation, A/B button handling on MainMenu, Games, Options, and Quit). Confirmed working with a physical controller under Tauri/WebView2.
+- **Gamepad support** — `src/utils/gamepad.js` polls the browser Gamepad API and is wired into every page (D-pad navigation, A/B button handling on MainMenu, Apps, Options, and Quit). Confirmed working with a physical controller under Tauri/WebView2.
 - **Sound effects** — `src/utils/sound.js` preloads and plays UI sound effects (hover/click/rollover), served as static files from `public/assets/sounds/` via Vite. (Previously broken under Tauri: `getSoundPath`/`getPicturePath` resolved a raw Windows filesystem path for `<audio>`/`<img>` `src` — worked under Electron's `webSecurity:false`, silently failed to load under WebView2, which is also why the Games page's Up/Down arrow icons rendered blank. Confirmed fixed — audio audible with a real playthrough.)
-- **Page navigation** — MainMenu, Games, Options, and Quit pages, routed with `react-router-dom` (`HashRouter`).
+- **Page navigation** — MainMenu, Apps, Options, and Quit pages, routed with `react-router-dom` (`HashRouter`).
 - **Windows installer** — `npm run tauri build` produces both an MSI and an NSIS setup executable; see [Building the Installer](#building-the-installer).
 - **Windows-native game paths + launching** — games live under `%USERPROFILE%\PiCubeGames\{covers,games}` (created automatically on first run), resolved via the `get_games_root` Tauri command. `launch_game` spawns `python <game>.py` (no `DISPLAY` env var — there's no X11 on Windows). Verified end-to-end with a real pygame test game.
 
@@ -69,7 +69,7 @@ The desktop shell has moved from Electron to Tauri. Reasoning and outcome:
 ### Carried over from the Pi version but not yet adapted
 - **Branding** — the MainMenu page header still literally reads "Pi Cube" (`src/pages/MainMenu.tsx`), left over from the source project and not yet renamed.
 
-### Games directory layout
+### Games/Apps directory layout
 ```
 %USERPROFILE%\PiCubeGames\
 ├── covers\
@@ -88,7 +88,7 @@ Requires Python 3 with `pygame` installed and on `PATH` (`pip install pygame`) �
 
 1. Implement a real Windows volume backend (feasible via the Windows Core Audio API, e.g. `IAudioEndpointVolume`, reachable from Rust via the `windows` crate).
 2. Rename in-app branding ("Pi Cube" → project's actual name) once decided.
-3. Re-integrate any remaining Pi-version features not yet ported (external device manager, dedicated game launcher window) — see the Pi version's own roadmap for what's implemented there.
+3. **Generalize the launcher beyond games.** Pygame games (`python <game>.py`) remain the initial supported format, but the launcher's scope is expanding to general Python applications — same `%USERPROFILE%\PiCubeGames\` launch model, broader content beyond the game format. Re-integrate any remaining Pi-version features not yet ported (external device/app manager page, dedicated launcher window) as part of this — see the Pi version's own roadmap for what's implemented there.
 
 Note: brightness control was dropped from scope — not a feature this project needs.
 
@@ -202,8 +202,8 @@ npm run lint
 npm run tauri build
 ```
 Produces both a Windows installer under `src-tauri/target/release/bundle/`:
-- `msi/Windows Cube Game Console_<version>_x64_en-US.msi`
-- `nsis/Windows Cube Game Console_<version>_x64-setup.exe`
+- `msi/Windows Cube Launcher_<version>_x64_en-US.msi`
+- `nsis/Windows Cube Launcher_<version>_x64-setup.exe`
 
 First run downloads WiX (for MSI) and NSIS (for the setup exe) automatically. Icons are still the generic Tauri scaffold defaults — swap `src-tauri/icons/` for real branding when available.
 
@@ -219,7 +219,7 @@ First run downloads WiX (for MSI) and NSIS (for the setup exe) automatically. Ic
 ⬜ Phase 4 — Real Windows volume backend (Tauri command, Core Audio API via the `windows` crate)
 ⬜ Phase 5 — Rebranding (drop "Pi Cube" leftovers)
 ✅ Phase 6 — Windows packaging (Tauri bundler — MSI/NSIS)
-⬜ Phase 7 — Re-integrate remaining Pi-version features (external device manager, game launcher window)
+⬜ Phase 7 — App/device manager page: generalize the launcher beyond games to general Python applications (pygame games remain the initial supported format)
 
 (Brightness control — previously Phase 4 — was dropped from scope.)
 ```

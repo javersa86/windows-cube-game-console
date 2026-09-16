@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Windows Cube Game Console",
+  "productName": "Windows Cube Launcher",
   "version": "0.1.0",
   "identifier": "com.brickhouse4u.windowscubegameconsole",
   "build": {

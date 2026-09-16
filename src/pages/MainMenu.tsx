@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { preload, play } from "../utils/sound.js";
 
 const MENU_ITEMS = [
-    { text: "Games", dst: "/games" },
+    { text: "Apps", dst: "/games" },
     { text: "Options", dst: "/options" },
     { text: "Quit", dst: "/quit" },
 ];
@@ -58,7 +58,7 @@ function MainMenu() {
 
     return (
         <CubeLayout width="640px" height="640px">
-            <h1>Pi Cube</h1>
+            <h1>Cube Launcher</h1>
             <div className={CubeLayoutStyle.container}>
                 {MENU_ITEMS.map((item, index) => (
                     <MenuOption
