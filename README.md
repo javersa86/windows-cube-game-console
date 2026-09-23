@@ -1,5 +1,5 @@
 # Windows Cube Launcher
-A custom game console menu built with React, TypeScript, and Vite — a Windows port of [pi-cube-game-console](https://github.com/Brickhouse4U/pi-cube-game-console), targeting desktop Windows instead of a Raspberry Pi / embedded Linux. **The desktop shell has migrated from Electron to [Tauri](https://tauri.app/)** — see [Tauri Migration](#tauri-migration) below.
+A custom game console menu built with React, TypeScript, and Vite — a Windows port of [pi-cube-game-console](https://github.com/javersa86/pi-cube-game-console), targeting desktop Windows instead of a Raspberry Pi / embedded Linux. **The desktop shell has migrated from Electron to [Tauri](https://tauri.app/)** — see [Tauri Migration](#tauri-migration) below.
 
 > ⚠️ This project is currently in active development. Several features are still placeholders — see [Current State](#current-state).
 
@@ -220,6 +220,12 @@ First run downloads WiX (for MSI) and NSIS (for the setup exe) automatically. Ic
 ⬜ Phase 5 — Rebranding (drop "Pi Cube" leftovers)
 ✅ Phase 6 — Windows packaging (Tauri bundler — MSI/NSIS)
 ⬜ Phase 7 — App/device manager page: generalize the launcher beyond games to general Python applications (pygame games remain the initial supported format)
+⬜ Phase 8 — Cloud-backed game library (AWS)
+       ⬜ 8a — Host game covers + a catalog manifest in S3
+       ⬜ 8b — Serve the catalog over an API (API Gateway + Lambda), replacing the local-only filesystem scan
+       ⬜ 8c — Download/sync selected games from S3 into %USERPROFILE%\PiCubeGames via a Tauri command
+       ⬜ 8d — Scoped IAM policy + least-privilege credentials for the launcher client
+       ⬜ 8e — Infrastructure as code (Terraform or SAM/CloudFormation) so the stack is reproducible
 
 (Brightness control — previously Phase 4 — was dropped from scope.)
 ```
@@ -228,3 +234,11 @@ First run downloads WiX (for MSI) and NSIS (for the setup exe) automatically. Ic
 
 ## Notes
 This project was developed for personal/educational purposes, as a Windows-targeted sibling to `pi-cube-game-console`. Initial project structure and documentation were developed with the assistance of Claude (Anthropic).
+
+---
+
+## Repository History
+The repository moved on 2026-09-23 from the `Brickhouse4U` GitHub account to [`javersa86`](https://github.com/javersa86), consolidating all portfolio projects under one account. History, issues, and pull requests came with it, and old `github.com/Brickhouse4U/...` links redirect here automatically. To update an existing clone:
+```bash
+git remote set-url origin https://github.com/javersa86/windows-cube-game-console.git
+```
